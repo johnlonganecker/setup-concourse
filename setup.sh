@@ -10,11 +10,13 @@ ssh-keygen -t rsa -f host_key -N ''
 ssh-keygen -t rsa -f worker_key -N ''
 ssh-keygen -t rsa -f session_signing_key -N ''
 
-apt-get install postgresql
+apt-get install -y postgresql
 
 su postgres
 
-psql < create-user-database.sql
+runuser -l postgres -c 'psql -c "CREATE DATABASE atc;"'
+
+mkdir -p /var/lib/concourse-dir
 
 # start up concourse server - ATC/TSA
 ./concourse web \
@@ -25,8 +27,6 @@ psql < create-user-database.sql
     --tsa-authorized-keys authorized_worker_keys \
     --external-url http://$HOST \
     --postgres-data-source postgres://concourse:concourse@localhost:5432/concourse
-
-mkdir -p /var/lib/concourse-dir
 
 # start up concourse worker
 sudo concourse worker \
