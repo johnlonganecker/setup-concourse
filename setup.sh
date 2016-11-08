@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -e -u -x
+set -e -x
 
 concourse_basic_auth_username=concourse
 concourse_basic_auth_password=concourse
@@ -10,6 +10,8 @@ concourse_dir=/var/lib/concourse
 postgres_username=concourse
 postgres_password=concourse
 postgres_database=concourse
+
+concourse_version=2.4.0
 
 while test $# -gt 0; do
   case "$1" in
@@ -48,13 +50,18 @@ while test $# -gt 0; do
       concourse_dir=$1
       shift
     ;;
+    --concourse-version)
+      shift
+      concourse_version=$1
+      shift
     *)
       break
     ;;
   esac
 done
 
-if [ ! -z "$host" ]; then
+# required fields
+if [ -z "$host" ]; then
    echo "host is a required field"
    exit 1
 fi
@@ -62,7 +69,7 @@ fi
 # incase $concourse_dir changes
 concourse_key_dir=$concourse_dir/keys
 
-wget https://github.com/concourse/concourse/releases/download/v2.3.1/concourse_linux_amd64
+wget https://github.com/concourse/concourse/releases/download/v$concourse_version/concourse_linux_amd64
 
 chmod +x concourse_linux_amd64
 
