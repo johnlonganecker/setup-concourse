@@ -11,7 +11,9 @@ postgres_username=concourse
 postgres_password=concourse
 postgres_database=concourse
 
-concourse_version=2.4.0
+concourse_version=2.5.0
+
+letsencrypt=false
 
 while test $# -gt 0; do
   case "$1" in
@@ -54,6 +56,12 @@ while test $# -gt 0; do
       shift
       concourse_version=$1
       shift
+    ;;
+    --letsencrypt)
+      letsencrypt=true
+      echo "yes lets encrypt!"
+      shift
+    ;;
     *)
       break
     ;;
@@ -65,6 +73,12 @@ if [ -z "$host" ]; then
    echo "host is a required field"
    exit 1
 fi
+
+# install letsencrypt
+#if [ $letsencrypt ]; then
+  sudo apt-get -y install letsencrypt
+  letsencrypt certonly -d $host
+#fi
 
 # incase $concourse_dir changes
 concourse_key_dir=$concourse_dir/keys
@@ -96,8 +110,11 @@ nohup concourse web \
     --session-signing-key $concourse_key_dir/session_signing_key \
     --tsa-host-key $concourse_key_dir/host_key \
     --tsa-authorized-keys $concourse_key_dir/authorized_worker_keys \
-    --external-url http://$host  \
-    --postgres-data-source postgres://$postgres_username:$postgres_password@localhost:5432/$postgres_database &
+    --postgres-data-source postgres://$postgres_username:$postgres_password@localhost:5432/$postgres_database \
+    --tls-cert /etc/letsencrypt/live/$host/fullchain.pem \
+    --tls-key /etc/letsencrypt/live/$host/privkey.pem \
+    --tls-bind-port 8081 \
+    --external-url https://$host  &
 
 # start up concourse worker
 nohup concourse worker \
@@ -105,3 +122,5 @@ nohup concourse worker \
   --tsa-host 127.0.0.1 \
   --tsa-public-key $concourse_key_dir/host_key.pub \
   --tsa-worker-private-key $concourse_key_dir/worker_key &
+
+
